@@ -22,7 +22,7 @@ const AIInsights = () => {
       value: `${savingsRate}%`,
       color: "text-green-600 dark:text-green-400",
       bgColor: "bg-green-100 dark:bg-green-900/30",
-      description: savingsRate > 20 ? "Excellent! You're saving well." : savingsRate > 10 ? "Good savings rate!" : "Consider increasing savings."
+      description: savingsRate > 20 ? "Excellent!You're saving well." : savingsRate > 10 ? "Good savings rate!" : "Consider increasing savings."
     },
     {
       icon: FaChartLine,
