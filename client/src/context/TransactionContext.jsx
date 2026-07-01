@@ -34,7 +34,7 @@ export const TransactionProvider = ({ children }) => {
     });
   };
 
-  // Fetch user-specific transactions from JSON server
+  // Fetch user-specific transactions from MERN server
   const fetchTransactions = async () => {
     const user = getUser();
     if (!user) {
@@ -43,8 +43,8 @@ export const TransactionProvider = ({ children }) => {
     }
 
     try {
-      // Fetch transactions filtered by userId
-      const res = await api.get(`/transactions?userId=${user.id}`);
+      // Fetch user's transactions (backend automatically filters by token)
+      const res = await api.get("/transactions");
       setTransactions(sortByLatest(res.data || []));
     } catch (err) {
       console.error("Error fetching transactions:", err);
@@ -80,13 +80,7 @@ export const TransactionProvider = ({ children }) => {
     }
 
     try {
-      // Add userId to transaction and post to transactions endpoint
-      const transactionWithUserId = {
-        ...tx,
-        userId: user.id,
-      };
-      
-      const res = await api.post("/transactions", transactionWithUserId);
+      const res = await api.post("/transactions", tx);
 
       setTransactions((prev) => sortByLatest([...prev, res.data]));
       toast.success("Transaction added!");
@@ -105,7 +99,6 @@ export const TransactionProvider = ({ children }) => {
     }
 
     try {
-      // Delete transaction directly from transactions endpoint
       await api.delete(`/transactions/${id}`);
 
       setTransactions((prev) =>
@@ -127,13 +120,7 @@ export const TransactionProvider = ({ children }) => {
     }
 
     try {
-      // Ensure userId is included and update transaction directly
-      const transactionWithUserId = {
-        ...updatedTx,
-        userId: user.id,
-      };
-      
-      const res = await api.put(`/transactions/${updatedTx.id}`, transactionWithUserId);
+      const res = await api.put(`/transactions/${updatedTx.id}`, updatedTx);
 
       setTransactions((prev) =>
         sortByLatest(prev.map((t) => (t.id === updatedTx.id ? res.data : t)))
@@ -155,15 +142,8 @@ export const TransactionProvider = ({ children }) => {
     }
 
     try {
-      // Get all user's transactions and delete them
-      const res = await api.get(`/transactions?userId=${user.id}`);
-      const userTransactions = res.data || [];
-      
-      // Delete all transactions
-      const deletePromises = userTransactions.map((t) => 
-        api.delete(`/transactions/${t.id}`)
-      );
-      await Promise.all(deletePromises);
+      // Direct bulk deletion request
+      await api.delete("/transactions");
       
       setTransactions([]);
       toast.success("All transactions have been reset!");

@@ -27,29 +27,21 @@ export const AuthProvider = ({ children }) => {
   // Login function
   const login = async (email, password) => {
     try {
-      const response = await api.get("/users");
-      const users = response.data;
+      const response = await api.post("/auth/login", { email, password });
+      const { user: userData, token } = response.data;
+      const userWithToken = { ...userData, token };
       
-      const foundUser = users.find(
-        (u) => u.email === email && u.password === password
-      );
-
-      if (foundUser) {
-        // Remove password before storing
-        const { password: _, ...userWithoutPassword } = foundUser;
-        setUser(userWithoutPassword);
-        localStorage.setItem("user", JSON.stringify(userWithoutPassword));
-        // Trigger custom event for TransactionContext to refresh
-        window.dispatchEvent(new Event("userChanged"));
-        toast.success("Login successful!");
-        return true;
-      } else {
-        toast.error("User doesn't exist. Please create an account.");
-        return false;
-      }
+      setUser(userWithToken);
+      localStorage.setItem("user", JSON.stringify(userWithToken));
+      
+      // Trigger custom event for TransactionContext to refresh
+      window.dispatchEvent(new Event("userChanged"));
+      toast.success("Login successful!");
+      return true;
     } catch (error) {
       console.error("Login error:", error);
-      toast.error("Failed to login. Please try again.");
+      const errMsg = error.response?.data?.message || "Failed to login. Please try again.";
+      toast.error(errMsg);
       return false;
     }
   };
@@ -57,39 +49,72 @@ export const AuthProvider = ({ children }) => {
   // Register function
   const register = async (username, email, password) => {
     try {
-      // Check if username already exists
-      const usersResponse = await api.get("/users");
-      const users = usersResponse.data;
+      const response = await api.post("/auth/register", { username, email, password });
+      const { user: userData, token } = response.data;
+      const userWithToken = { ...userData, token };
+
+      setUser(userWithToken);
+      localStorage.setItem("user", JSON.stringify(userWithToken));
       
-      if (users.some((u) => u.username === username)) {
-        toast.error("Username already exists. Please choose another.");
-        return false;
-      }
-
-      if (users.some((u) => u.email === email)) {
-        toast.error("Email already exists. Please use another email.");
-        return false;
-      }
-
-      // Create new user (no transactions array needed - transactions are separate)
-      const newUser = {
-        username,
-        email,
-        password,
-      };
-
-      const response = await api.post("/users", newUser);
-      const { password: _, ...userWithoutPassword } = response.data;
-      
-      setUser(userWithoutPassword);
-      localStorage.setItem("user", JSON.stringify(userWithoutPassword));
       // Trigger custom event for TransactionContext to refresh
       window.dispatchEvent(new Event("userChanged"));
       toast.success("Account created successfully!");
       return true;
     } catch (error) {
       console.error("Registration error:", error);
-      toast.error("Failed to create account. Please try again.");
+      const errMsg = error.response?.data?.message || "Failed to create account. Please try again.";
+      toast.error(errMsg);
+      return false;
+    }
+  };
+
+  // Google Login function
+  const googleLogin = async (token) => {
+    try {
+      const response = await api.post("/auth/google", { token });
+      if (response.data.isNewUser) {
+        return { isNewUser: true, email: response.data.email, googleId: response.data.googleId };
+      }
+      
+      const { user: userData, token: localToken } = response.data;
+      const userWithToken = { ...userData, token: localToken };
+
+      setUser(userWithToken);
+      localStorage.setItem("user", JSON.stringify(userWithToken));
+      
+      window.dispatchEvent(new Event("userChanged"));
+      toast.success("Google Login successful!");
+      return { isNewUser: false };
+    } catch (error) {
+      console.error("Google login error:", error);
+      const errMsg = error.response?.data?.message || "Google Login failed. Please try again.";
+      toast.error(errMsg);
+      return null;
+    }
+  };
+
+  // Google Register completion function
+  const googleRegister = async (username, email, googleId, token) => {
+    try {
+      const response = await api.post("/auth/google/register", {
+        username,
+        email,
+        googleId,
+        token
+      });
+      const { user: userData, token: localToken } = response.data;
+      const userWithToken = { ...userData, token: localToken };
+
+      setUser(userWithToken);
+      localStorage.setItem("user", JSON.stringify(userWithToken));
+      
+      window.dispatchEvent(new Event("userChanged"));
+      toast.success("Account created successfully with Google!");
+      return true;
+    } catch (error) {
+      console.error("Google registration completion error:", error);
+      const errMsg = error.response?.data?.message || "Failed to complete Google registration.";
+      toast.error(errMsg);
       return false;
     }
   };
@@ -104,7 +129,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, register, googleLogin, googleRegister, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

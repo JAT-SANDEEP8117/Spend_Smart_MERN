@@ -15,9 +15,15 @@ const applyThemeClass = (theme) => {
   }
 };
 
-// Get initial theme (system preference → fallback)
+// Get initial theme (localStorage → system preference → fallback)
 const getInitialTheme = () => {
   try {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme) {
+      applyThemeClass(savedTheme);
+      return savedTheme;
+    }
+
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     const systemTheme = prefersDark ? "dark" : "light";
 
@@ -35,12 +41,20 @@ const getInitialTheme = () => {
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(getInitialTheme);
 
+  const toggleTheme = () => {
+    setTheme((prevTheme) => {
+      const newTheme = prevTheme === "dark" ? "light" : "dark";
+      localStorage.setItem("theme", newTheme);
+      return newTheme;
+    });
+  };
+
   useEffect(() => {
     applyThemeClass(theme);
   }, [theme]);
 
   return (
-    <ThemeContext.Provider value={{ theme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

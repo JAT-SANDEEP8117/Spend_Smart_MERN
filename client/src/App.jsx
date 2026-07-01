@@ -1,7 +1,7 @@
 // src/App.jsx
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import Footer from "./components/Footer";
@@ -60,7 +60,7 @@ const PublicRoute = ({ children }) => {
 
 const App = () => {
   const { theme } = useContext(ThemeContext);
-  const { user } = useContext(AuthContext);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <>
@@ -88,29 +88,29 @@ const App = () => {
             path="/*"
             element={
               <ProtectedRoute>
-        <div className="flex min-h-screen">
-          {/* LEFT SIDEBAR - Fixed */}
-          <Sidebar />
+                <div className="flex min-h-screen relative overflow-x-hidden">
+                  {/* LEFT SIDEBAR - Fixed / Collapsible */}
+                  <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-          {/* MAIN CONTENT */}
-          <div className="flex-1 ml-60 min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
-            <Navbar />
-            
-            <div className="flex-1 p-4 lg:p-6">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/transactions" element={<Transactions />} />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="/pdf" element={<PDFExport />} />
-                <Route path="/insights" element={<AIInsights />} />
-                <Route path="/about" element={<About />} />
+                  {/* MAIN CONTENT */}
+                  <div className="flex-1 lg:ml-60 min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col w-full transition-all duration-300">
+                    <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+                    
+                    <div className="flex-1 p-4 lg:p-6 w-full max-w-7xl mx-auto">
+                      <Routes>
+                        <Route path="/" element={<Home />} />
+                        <Route path="/transactions" element={<Transactions />} />
+                        <Route path="/analytics" element={<Analytics />} />
+                        <Route path="/pdf" element={<PDFExport />} />
+                        <Route path="/insights" element={<AIInsights />} />
+                        <Route path="/about" element={<About />} />
                         <Route path="/profile" element={<Profile />} />
-              </Routes>
-            </div>
+                      </Routes>
+                    </div>
 
-            <Footer />
-          </div>
-        </div>
+                    <Footer />
+                  </div>
+                </div>
               </ProtectedRoute>
             }
           />
