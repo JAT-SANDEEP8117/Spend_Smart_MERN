@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-
+//using mongoose
 const connectDB = async () => {
   try {
     const connUri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/spend_smart";
