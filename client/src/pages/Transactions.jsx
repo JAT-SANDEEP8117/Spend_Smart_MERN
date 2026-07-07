@@ -74,7 +74,7 @@ const Transactions = () => {
 
   return (
     <div className="text-gray-900 dark:text-white animate-fadeIn">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <h1 className="text-3xl font-bold">Transactions</h1>
         <div className="flex items-center gap-3">
           <ResetButton />

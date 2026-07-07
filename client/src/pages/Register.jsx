@@ -182,9 +182,8 @@ const Register = () => {
       </div>
 
       {/* Register Container */}
-      <div className="w-full max-w-lg relative z-10 animate-scaleIn">
-
-        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-2xl shadow-2xl px-10 py-8 md:px-12 border border-gray-200/50 dark:border-gray-700/50 hover:shadow-3xl transition-all duration-300">
+      <div className="w-full max-w-md md:max-w-lg relative z-10 animate-scaleIn px-2">
+        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-2xl shadow-2xl px-6 py-8 sm:px-10 sm:py-10 md:px-12 border border-gray-200/50 dark:border-gray-700/50 hover:shadow-3xl transition-all duration-300">
 
           {/* Logo / Header */}
           <div className="text-center mb-8 animate-slideUp">

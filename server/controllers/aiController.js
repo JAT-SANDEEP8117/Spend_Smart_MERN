@@ -1,41 +1,33 @@
-// TODO: Integrate AI model (RAG pipeline, embeddings, vector database, retrieval, and generation)
-// This file serves as a placeholder structure for future AI integration.
-
 const Transaction = require("../models/Transaction");
+const Groq = require("groq-sdk");
 
 // @desc    Get AI-driven savings insights and recommendations
-// @route   POST /api/ai/insights
+// @route   GET /api/ai/insights
 // @access  Private
 const getAIInsights = async (req, res) => {
   try {
-    // 1. Fetch user transactions to serve as context for the AI model
+    // 1. Check for Groq API Key
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      return res.status(400).json({
+        success: false,
+        errorType: "MISSING_API_KEY",
+        message: "Groq API Key is missing. Please add GROQ_API_KEY to your server's .env file.",
+      });
+    }
+
+    // 2. Fetch user transactions to serve as context for the AI model
     const transactions = await Transaction.find({ userId: req.user._id });
 
     if (!transactions || transactions.length === 0) {
       return res.json({
-        insights: [
-          "No transaction history found yet. Add some income or expense transactions to unlock personalized AI savings insights!",
-        ],
         success: true,
-        todo: "This is a mock placeholder response. Once the AI model is ready, integrate it here.",
+        empty: true,
+        message: "No transaction history found yet. Add some income or expense transactions to unlock personalized AI savings insights!",
       });
     }
 
-    // TODO: Implement the RAG pipeline and Retrieval & Generation logic:
-    //
-    // STEP 1: Generate embeddings for transactions or personal finance knowledge documents.
-    //         (e.g., using OpenAI Embeddings, HuggingFace, Google Gemini API, etc.)
-    //
-    // STEP 2: Index and query a vector database (e.g., Pinecone, ChromaDB, MongoDB Atlas Vector Search)
-    //         to retrieve relevant financial saving guides or historical spending context.
-    //
-    // STEP 3: Combine retrieved context with the user's transaction data (amount, type, category)
-    //         into a prompt template.
-    //
-    // STEP 4: Call an LLM (e.g., GPT-4, Gemini Flash, Claude) to generate personalized financial tips.
-    //
-    // For now, we will return some simple rules-based insights as a placeholder.
-
+    // 3. Calculate useful financial statistics locally
     const totalIncome = transactions
       .filter((t) => t.type === "income")
       .reduce((sum, t) => sum + t.amount, 0);
@@ -44,55 +36,202 @@ const getAIInsights = async (req, res) => {
       .filter((t) => t.type === "expense")
       .reduce((sum, t) => sum + t.amount, 0);
 
+    const balance = totalIncome - totalExpense;
     const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
 
-    const insights = [];
+    const expenses = transactions.filter((t) => t.type === "expense");
+    
+    const avgTransactionAmount = transactions.length > 0
+      ? transactions.reduce((sum, t) => sum + t.amount, 0) / transactions.length
+      : 0;
 
-    if (savingsRate < 10) {
-      insights.push(
-        "ALERT: Your savings rate is currently below 10%. Consider reviewing high expense categories to free up cash flow."
-      );
-    } else if (savingsRate > 25) {
-      insights.push(
-        "EXCELLENT: Your savings rate is above 25%! You might want to allocate some funds to investments to grow your wealth."
-      );
-    } else {
-      insights.push(
-        "GOOD WORK: You have a healthy savings rate. Let's aim to optimize your category budgets next month."
-      );
+    const avgExpense = expenses.length > 0
+      ? totalExpense / expenses.length
+      : 0;
+
+    // Largest expense
+    let largestExpense = null;
+    if (expenses.length > 0) {
+      largestExpense = expenses.reduce((max, t) => (t.amount > max.amount ? t : max), expenses[0]);
     }
 
-    // Identify top category
+    // Category-wise spending
     const categoryTotals = {};
-    transactions
-      .filter((t) => t.type === "expense")
-      .forEach((t) => {
-        categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
-      });
+    expenses.forEach((t) => {
+      categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+    });
 
-    let topCategory = "";
-    let maxExpense = 0;
+    let highestCategory = "";
+    let highestCategoryAmount = 0;
     Object.entries(categoryTotals).forEach(([cat, val]) => {
-      if (val > maxExpense) {
-        maxExpense = val;
-        topCategory = cat;
+      if (val > highestCategoryAmount) {
+        highestCategoryAmount = val;
+        highestCategory = cat;
       }
     });
 
-    if (topCategory) {
-      insights.push(
-        `TIP: Your highest spending category is "${topCategory}" (₹${maxExpense.toLocaleString()}). Try setting a target limit for it next week.`
-      );
+    // Category-wise income
+    const categoryIncomeTotals = {};
+    transactions
+      .filter((t) => t.type === "income")
+      .forEach((t) => {
+        categoryIncomeTotals[t.category] = (categoryIncomeTotals[t.category] || 0) + t.amount;
+      });
+
+    // Monthly trends (group by YYYY-MM)
+    const monthlyTrends = {};
+    transactions.forEach((t) => {
+      if (t.date) {
+        const month = t.date.substring(0, 7); // "YYYY-MM"
+        if (!monthlyTrends[month]) {
+          monthlyTrends[month] = { income: 0, expense: 0 };
+        }
+        if (t.type === "income") {
+          monthlyTrends[month].income += t.amount;
+        } else {
+          monthlyTrends[month].expense += t.amount;
+        }
+      }
+    });
+
+    // Build condensed financial profile for prompt
+    const financialProfile = {
+      totalIncome,
+      totalExpense,
+      balance,
+      savingsRate: Number(savingsRate.toFixed(1)),
+      avgTransactionAmount: Number(avgTransactionAmount.toFixed(1)),
+      avgExpense: Number(avgExpense.toFixed(1)),
+      largestExpense: largestExpense
+        ? {
+            amount: largestExpense.amount,
+            category: largestExpense.category,
+            description: largestExpense.description,
+            date: largestExpense.date,
+          }
+        : null,
+      highestCategory,
+      highestCategoryAmount,
+      categoryWiseSpending: categoryTotals,
+      categoryWiseIncome: categoryIncomeTotals,
+      monthlyTrends,
+    };
+
+    // 4. Initialize Groq client
+    const groq = new Groq({ apiKey });
+
+    // 5. Invoke Groq completion with JSON mode
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert personal finance AI advisor.
+Analyze the user's aggregated financial data.
+Provide a personalized, structured financial analysis.
+Guidelines:
+- If the savings rate is positive and high, praise them.
+- If the savings rate is low or negative, provide critical warning insights.
+- Point out specific patterns like their highest spending category and monthly trends.
+- Offer exactly 2 to 3 actionable, smart budget recommendations.
+- Keep observations concise, engaging, and practical.
+- Do not provide formal investment advice (stocks, crypto, etc.) or tax/legal advice. Use a friendly yet professional tone.
+
+You MUST respond with a single valid JSON object containing exactly the following schema structure:
+{
+  "summary": "Short overall financial summary",
+  "financialHealth": {
+    "status": "Good | Moderate | Needs Attention",
+    "score": 75,
+    "explanation": "Short explanation"
+  },
+  "insights": [
+    {
+      "title": "Insight title",
+      "description": "Personalized explanation",
+      "type": "positive | warning | neutral"
+    }
+  ],
+  "recommendations": [
+    {
+      "title": "Recommendation title",
+      "description": "Practical recommendation"
+    }
+  ],
+  "spendingAnalysis": {
+    "highestCategory": "Category",
+    "observation": "Short observation"
+  },
+  "savingsAnalysis": {
+    "savingsRate": 20,
+    "observation": "Short observation"
+  }
+}
+Do not wrap your output in markdown code blocks like \`\`\`json. Return only raw parseable JSON.`
+        },
+        {
+          role: "user",
+          content: `Here is my financial profile:\n${JSON.stringify(financialProfile, null, 2)}`
+        }
+      ],
+      model: "llama-3.3-70b-versatile",
+      response_format: { type: "json_object" },
+    });
+
+    const responseText = chatCompletion.choices[0].message.content;
+    let parsed;
+    try {
+      parsed = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error("Failed to parse Groq response as JSON:", parseError, responseText);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to parse insights generated by AI.",
+      });
     }
 
+    // 6. Safely validate properties to protect the client UI
+    const validated = {
+      summary: parsed.summary || "No summary available at this time.",
+      financialHealth: {
+        status: parsed.financialHealth?.status || "Moderate",
+        score: typeof parsed.financialHealth?.score === "number" ? parsed.financialHealth.score : 50,
+        explanation: parsed.financialHealth?.explanation || "Financial health assessment complete."
+      },
+      insights: Array.isArray(parsed.insights)
+        ? parsed.insights.map(item => ({
+            title: item.title || "Insight",
+            description: item.description || "",
+            type: ["positive", "warning", "neutral"].includes(item.type?.toLowerCase()) ? item.type.toLowerCase() : "neutral"
+          }))
+        : [],
+      recommendations: Array.isArray(parsed.recommendations)
+        ? parsed.recommendations.map(item => ({
+            title: item.title || "Budget Suggestion",
+            description: item.description || ""
+          }))
+        : [],
+      spendingAnalysis: {
+        highestCategory: parsed.spendingAnalysis?.highestCategory || highestCategory || "None",
+        observation: parsed.spendingAnalysis?.observation || "Category analysis complete."
+      },
+      savingsAnalysis: {
+        savingsRate: typeof parsed.savingsAnalysis?.savingsRate === "number" 
+          ? parsed.savingsAnalysis.savingsRate 
+          : (typeof parsed.savingsAnalysis?.savingsRate === "string" ? parseFloat(parsed.savingsAnalysis.savingsRate) || 0 : Number(savingsRate.toFixed(1))),
+        observation: parsed.savingsAnalysis?.observation || "Savings analysis complete."
+      }
+    };
+
     res.json({
-      insights,
-      isPlaceholder: true,
-      message: "AI insights model logic will be integrated here.",
+      success: true,
+      data: validated,
     });
   } catch (error) {
-    console.error("AI Insights Error:", error.message);
-    res.status(500).json({ message: "Server error while generating AI insights" });
+    console.error("Groq AI Insights Controller Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while generating AI insights",
+    });
   }
 };
 

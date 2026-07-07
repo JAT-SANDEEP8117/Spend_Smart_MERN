@@ -4,6 +4,6 @@ const { getAIInsights } = require("../controllers/aiController");
 const { protect } = require("../middleware/authMiddleware");
 
 // Route is protected by JWT authentication
-router.post("/insights", protect, getAIInsights);
+router.get("/insights", protect, getAIInsights);
 
 module.exports = router;

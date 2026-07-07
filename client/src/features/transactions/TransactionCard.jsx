@@ -4,7 +4,7 @@ import { FaTrash, FaEdit } from "react-icons/fa";
 
 const TransactionCard = ({ transaction, onDelete, onEdit }) => {
   return (
-    <div className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 flex justify-between items-center hover:shadow-lg transition-shadow">
+    <div className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between sm:items-center gap-3 hover:shadow-lg transition-shadow">
       {/* Left Side */}
       <div className="flex-1">
         <div className="font-semibold text-gray-900 dark:text-white capitalize text-lg mb-1">
@@ -21,7 +21,7 @@ const TransactionCard = ({ transaction, onDelete, onEdit }) => {
       </div>
 
       {/* Right Side */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto border-t sm:border-t-0 pt-2 sm:pt-0 border-gray-100 dark:border-gray-700">
         <span
           className={`text-lg font-bold ${
             transaction.type === "income"
