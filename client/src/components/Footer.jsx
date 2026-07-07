@@ -17,7 +17,7 @@ const Footer = () => {
           
           <div className="flex items-center gap-4">
             <a
-              href="https://github.com/JAT-SANDEEP8117"
+              href="https://github.com/JAT-SANDEEP8117/Spend_Smart_MERN.git"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
