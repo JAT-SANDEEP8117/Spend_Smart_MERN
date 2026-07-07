@@ -1,6 +1,6 @@
 # Spend Smart
 
-Spend Smart is a modern full-stack MERN (MongoDB, Express.js, React, Node.js) personal finance management application that helps users track their income, expenses, and overall financial health. It features secure JWT authentication, Google OAuth login, responsive analytics with charts, PDF report export, and personalized AI-powered financial insights.
+A modern, full-stack MERN personal finance management application with secure authentication, AI-powered financial insights, interactive analytics, and PDF report export.
 
 ---
 
@@ -8,203 +8,217 @@ Spend Smart is a modern full-stack MERN (MongoDB, Express.js, React, Node.js) pe
 
 - [Overview](#overview)
 - [Key Features](#key-features)
-- [Tech Stack & Libraries](#tech-stack--libraries)
-- [Project Architecture](#project-architecture)
-- [Environment Variables](#environment-variables)
+- [AI Financial Insights](#ai-financial-insights)
+- [Authentication & Session Security](#authentication--session-security)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
 - [Installation & Setup](#installation--setup)
 - [API Endpoints](#api-endpoints)
-- [AI Financial Insights Workflow](#ai-financial-insights-workflow)
+- [Deployment](#deployment)
 - [Developer Info](#developer-info)
-- [License](#license)
 
 ---
 
 ## Overview
 
-**Spend Smart** allows users to:
-- Register accounts and securely sign in via JWT-based credentials.
-- Login instantly using Google OAuth (Google Sign-In integration).
-- Create, read, update, and delete (CRUD) user-specific income and expense transactions.
-- Filter, sort, and search transactions to find historical logs easily.
-- Analyze monthly budgets, category-wise spending, and savings trends using interactive Recharts graphs.
-- Export transaction summaries and tables to structured PDF reports.
-- Generate personalized, smart financial advice, budget tips, and a financial health score via secure backend integration with Groq API.
-- Use the application seamlessly in both Dark Mode and Light Mode on mobile, tablet, and desktop screens.
+Spend Smart helps users track income, expenses, and financial health through a clean and responsive interface. It supports secure credential-based and Google OAuth authentication, full transaction CRUD, category analytics, PDF exports, and on-demand personalized AI financial analysis powered by Groq.
 
 ---
 
 ## Key Features
 
-- **MERN Architecture:** React frontend, Express/Node backend API, MongoDB Atlas cloud database.
-- **Dual Authentication:** Email/password credentials (hashed with bcryptjs) and Google OAuth Client Sign-In.
-- **AI-Powered Analytics:** Real transaction statistics are summarized securely on the backend and analyzed by Groq API, returning actionable budget insights and financial health assessments.
-- **Interactive Visualizations:** Line and Pie charts rendering spending breakdown and income trends (Recharts).
-- **PDF Report Exporter:** High-fidelity client-side PDF document generation.
-- **Responsive Spacing:** Tailwind CSS media queries ensure absolute compatibility on screens as small as 320px up to widescreen monitors.
-- **State Management & Notifications:** React Context-driven authentication and real-time React Toastify alerts.
+- **Transaction Management** — Add, edit, delete, and reset income/expense transactions with full history.
+- **Financial Analytics** — Interactive line and pie charts for spending patterns, monthly trends, and category breakdowns.
+- **PDF Export** — Generate and download detailed financial reports.
+- **AI Financial Insights** — On-demand, personalized analysis powered by Groq (llama-3.3-70b-versatile). Insights are saved per-user in MongoDB and restored on next visit.
+- **Dual Authentication** — Email/password with bcrypt hashing and Google OAuth.
+- **Session Security** — Absolute 24-hour session expiry + 10-hour inactivity auto-logout.
+- **Dark/Light Mode** — Persistent theme toggle.
+- **Responsive Design** — Works across mobile, tablet, and desktop.
 
 ---
 
-## Tech Stack & Libraries
+## AI Financial Insights
+
+The AI Insights feature is powered by Groq API and works as follows:
+
+- **Manual generation only** — Groq is **never** called automatically. The page loads saved insights from the database without any API call.
+- **First-time users** see a "Get AI Insights" button. Clicking it triggers exactly one Groq request.
+- **Returning users** see their previously generated insights immediately. A "Refresh AI Insights" button allows generating a new analysis.
+- **Persistence** — Each successful generation is saved to MongoDB per authenticated user and restored on page load or browser refresh.
+- **Failure safety** — If a refresh request fails, the previous successful insights remain displayed. Errors are shown non-destructively.
+- **Duplicate prevention** — A `useRef` frontend lock and a server-side in-flight guard prevent concurrent duplicate requests.
+
+### AI Data Privacy
+
+Only aggregated financial statistics (totals, rates, category sums) are sent to Groq. Raw transaction descriptions and personal identifiers are never forwarded.
+
+---
+
+## Authentication & Session Security
+
+- **JWT-based** — Tokens expire after **24 hours** (enforced on the backend).
+- **Absolute 24-hour expiry** — The session ends 24 hours after login regardless of activity.
+- **10-hour inactivity logout** — The user is logged out after 10 continuous hours without interaction.
+- **Inactivity tracking** — Mouse, keyboard, click, and touch events update a throttled `lastActivityTimestamp` in localStorage (at most once per minute).
+- **Token expiry handling** — The API interceptor catches 401 responses and triggers automatic logout.
+- **Rule** — User activity resets only the inactivity timer. It never extends the absolute 24-hour session.
+
+---
+
+## Tech Stack
 
 ### Frontend (`client/`)
-- **React** (^19.2.0): UI framework.
-- **React Router DOM** (^7.9.6): Client-side path navigation and auth protection.
-- **Axios** (^1.13.2): Centralized client request interceptors.
-- **Recharts** (^3.5.0): Responsive analytical graphs.
-- **@react-pdf/renderer** (^4.3.1): Document generation engine.
-- **React Hook Form** (^7.53.2): Validated inputs.
-- **React Icons** (^5.5.0): High fidelity UI icons.
-- **React Toastify** (^11.0.5): User-friendly alerts.
-- **Tailwind CSS** (^4.1.17) & **@tailwindcss/vite**: Utility styling.
+| Technology | Version | Purpose |
+|---|---|---|
+| React | ^19.2.0 | UI framework |
+| React Router DOM | ^7.9.6 | Client-side navigation and route protection |
+| Axios | ^1.13.2 | HTTP client with request/response interceptors |
+| Recharts | ^3.5.0 | Analytics charts |
+| @react-pdf/renderer | ^4.3.1 | PDF document generation |
+| React Hook Form | ^7.53.2 | Form validation |
+| React Icons | ^5.5.0 | Icon set |
+| React Toastify | ^11.0.5 | Notifications |
+| Tailwind CSS | ^4.1.17 | Utility-first styling |
+| Vite | ^7.2.5 | Build tool |
 
 ### Backend (`server/`)
-- **Node.js** & **Express.js** (^4.19.2): Secure REST API router.
-- **Mongoose** (^8.4.1): Database models & validation.
-- **groq-sdk** (^0.12.0): Groq Node.js SDK.
-- **jsonwebtoken** (^9.0.2): Secure JWT auth token signing and validation.
-- **bcryptjs** (^2.4.3): Secure password hashing.
-- **google-auth-library** (^9.11.0): Token validation for Google Sign-In.
-- **dotenv** (^16.4.5): Secure environmental configs.
-- **cors** (^2.8.5): Cross-Origin Request configuration.
+| Technology | Version | Purpose |
+|---|---|---|
+| Node.js + Express | ^4.19.2 | REST API server |
+| Mongoose | ^8.4.1 | MongoDB ODM |
+| groq-sdk | ^1.3.0 | Groq API integration for AI insights |
+| jsonwebtoken | ^9.0.2 | JWT signing and verification |
+| bcryptjs | ^2.4.3 | Password hashing |
+| google-auth-library | ^9.11.0 | Google OAuth token verification |
+| dotenv | ^16.4.5 | Environment variable loading |
+| cors | ^2.8.5 | Cross-origin request configuration |
 
 ---
 
-## Project Architecture
+## Project Structure
 
 ```
 Spend_Smart_MERN/
-├── client/                     # React Frontend
+├── README.md
+├── SETUP_GUIDE.md
+├── PROJECT_DOCUMENTATION.md
+├── client/                         # React + Vite Frontend
+│   ├── .env.example                # Client env variable template
 │   ├── src/
-│   │   ├── components/         # Reusable layouts (Navbar, Sidebar, Charts)
-│   │   ├── context/            # Global contexts (Auth, Theme, Transaction)
-│   │   ├── features/           # Transaction cards, forms, PDF structures
-│   │   ├── pages/              # Routing viewpages (AIInsights, Analytics, Home, Login, About)
-│   │   ├── utils/              # Centralized Axios client (api.js), calculateTotals
-│   │   ├── App.jsx             # Routes declaration
-│   │   └── main.jsx            # Entry point
-│   ├── index.html              # HTML shell (GSI accounts script included)
+│   │   ├── App.jsx                 # Routes and protected route logic
+│   │   ├── main.jsx                # Entry point
+│   │   ├── components/             # Navbar, Sidebar, Footer, charts
+│   │   ├── context/                # AuthContext, ThemeContext, TransactionContext
+│   │   ├── features/               # Transaction forms/cards, PDF components
+│   │   ├── pages/                  # AIInsights, Analytics, Home, About, Login, Register, etc.
+│   │   └── utils/                  # api.js (Axios instance), calculateTotals.js
 │   └── package.json
-└── server/                     # Node.js Express API Backend
-    ├── config/                 # DB configuration (db.js)
-    ├── controllers/            # Controller layers (auth, transactions, ai)
-    ├── middleware/             # Route protections (authMiddleware.js)
-    ├── models/                 # Database Schemas (User.js, Transaction.js)
-    ├── routes/                 # Endpoint routers (authRoutes, transactionRoutes, aiRoutes)
-    ├── utils/                  # Sign helpers (jwt.js)
-    ├── index.js                # Core app listener
-    ├── package.json
-    └── .env                    # Credentials configuration
-```
-
----
-
-## Environment Variables
-
-### Backend (`server/.env`)
-Create a `.env` file in the `server` directory and declare:
-```env
-PORT=5000
-MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret_key
-GOOGLE_CLIENT_ID=your_google_oauth_client_id
-GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
-AI_API_KEY=your_gemini_api_key
-```
-
-### Frontend (`client/.env`)
-Create a `.env` file in the `client` directory (or rely on fallbacks):
-```env
-VITE_GOOGLE_CLIENT_ID=your_google_oauth_client_id
+└── server/                         # Node.js + Express Backend
+    ├── .env.example                # Server env variable template
+    ├── config/db.js                # MongoDB connection
+    ├── controllers/
+    │   ├── aiController.js         # GET saved / POST generate Groq insights
+    │   ├── authController.js       # Login, register, Google OAuth
+    │   └── transactionController.js
+    ├── middleware/authMiddleware.js # JWT protect middleware
+    ├── models/
+    │   ├── User.js
+    │   ├── Transaction.js
+    │   └── AIInsights.js           # Per-user AI insights persistence
+    ├── routes/
+    │   ├── aiRoutes.js
+    │   ├── authRoutes.js
+    │   └── transactionRoutes.js
+    ├── utils/jwt.js                # Token generation (24h expiry)
+    ├── index.js                    # App entry, CORS, middleware, server
+    └── package.json
 ```
 
 ---
 
 ## Installation & Setup
 
-Ensure you have **Node.js** (v18+ recommended) and **MongoDB** (or a MongoDB Atlas URI) ready.
+See [SETUP_GUIDE.md](./SETUP_GUIDE.md) for detailed step-by-step instructions.
 
-### 1. Clone the project
+### Quick Start
+
 ```bash
-git clone <repository-url>
-cd Spend_Smart_MERN
-```
+# 1. Install backend dependencies
+cd server && npm install
 
-### 2. Configure Backend Credentials
-Navigate to `server` and create `.env`:
-```bash
-cd server
-npm install
-# Add MONGODB_URI, JWT_SECRET, GOOGLE_CLIENT_ID and AI_API_KEY values to .env
-```
+# 2. Configure server environment
+cp .env.example .env
+# Edit .env with your MongoDB URI, JWT secret, Groq API key
 
-### 3. Configure Frontend Credentials
-Navigate to `client` and create `.env`:
-```bash
-cd ../client
-npm install
-# Add VITE_GOOGLE_CLIENT_ID values to .env
-```
+# 3. Start backend
+npm run dev
 
-### 4. Start the Application
+# 4. In a new terminal — install frontend dependencies
+cd ../client && npm install
 
-**Run Express Server (Terminal 1):**
-```bash
-cd server
+# 5. Configure client environment (optional for dev — defaults to localhost)
+cp .env.example .env
+
+# 6. Start frontend
 npm run dev
 ```
 
-**Run React Vite Client (Terminal 2):**
-```bash
-cd client
-npm run dev
-```
-
-Open [http://localhost:5173](http://localhost:5173) in your web browser.
+Open [http://localhost:5173](http://localhost:5173).
 
 ---
 
 ## API Endpoints
 
-All protected endpoints require a valid header signature: `Authorization: Bearer <JWT_Token>`.
+All protected endpoints require: `Authorization: Bearer <JWT_Token>`
 
-### Authentication (`/api/auth`)
-- `POST /register` - User credentials registration.
-- `POST /login` - User credentials sign-in.
-- `POST /google` - Verify Google OIDC credential token.
-- `POST /google/register` - Create username/profile for a new Google user.
+### Auth (`/api/auth`)
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/register` | Register with email/password |
+| POST | `/login` | Login with email/password |
+| POST | `/google` | Verify Google OAuth token |
+| POST | `/google/register` | Complete Google user registration |
 
-### Transactions (`/api/transactions`)
-- `GET /` - Fetch transactions belonging to the authenticated user.
-- `POST /` - Add a new transaction (income/expense).
-- `PUT /:id` - Update a transaction.
-- `DELETE /:id` - Delete a transaction.
-- `DELETE /` - Bulk deletion/reset of all user transactions.
+### Transactions (`/api/transactions`) — Protected
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/` | Get user's transactions |
+| POST | `/` | Add transaction |
+| PUT | `/:id` | Update transaction |
+| DELETE | `/:id` | Delete transaction |
+| DELETE | `/` | Reset all user transactions |
 
-### AI Analytics (`/api/ai`)
-- `GET /insights` - Summarize transactions, query Groq API, and retrieve structured financial analysis.
+### AI Insights (`/api/ai`) — Protected
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/insights` | Get saved insights (no Groq call) |
+| POST | `/insights` | Generate new insights via Groq and persist |
 
 ---
 
-## AI Financial Insights Workflow
+## Deployment
 
-The application employs a highly privacy-conscious architecture to generate insights:
-1. **User Authentication:** The client requests insights securely using their JWT signature.
-2. **Transaction Query:** The Express server queries only that user's transactions from MongoDB.
-3. **Data Aggregation:** The server calculates statistical fields (savings rates, high category sums, monthly trends) locally.
-4. **LLM Query:** The aggregated stats (and *no raw descriptions or sensitive user emails*) are sent to Groq API with a structured JSON request configuration.
-5. **Structured Display:** The model responds in JSON, which is safely validated and returned to the client to render visual gauges, recommendations, and health indicators.
+Before deploying:
+
+1. Set `VITE_API_BASE_URL` in `client/.env` to your production backend URL.
+2. Set `ALLOWED_ORIGINS` in `server/.env` to your production frontend URL.
+3. Build the frontend: `cd client && npm run build` — output in `client/dist/`.
+4. Start backend in production: `NODE_ENV=production node index.js` (or use a process manager like PM2).
+5. Ensure all environment variables are configured on your hosting platform.
+
+See [SETUP_GUIDE.md](./SETUP_GUIDE.md) for full deployment environment variable reference.
 
 ---
 
 ## Developer Info
 
-- **Lead Developer:** Sandeep Jat
-- **Github Profile:** [JAT-SANDEEP8117](https://github.com/JAT-SANDEEP8117)
-- **University:** SRM University AP (B.Tech Computer Science & Engineering)
+- **Developer:** Sandeep Jat
+- **GitHub:** [JAT-SANDEEP8117](https://github.com/JAT-SANDEEP8117)
+- **University:** SRM University AP — B.Tech Computer Science & Engineering
 
 ---
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License.

@@ -1,807 +1,476 @@
-# Spend Smart - Project Documentation
+# Spend Smart — Project Documentation
 
-**Project Name:** Spend Smart  
-**Group:** GenX  
-**Type:** Full Stack Personal Finance Management Application  
-**Technology Stack:** React, JSON Server, Tailwind CSS
+**Project:** Spend Smart  
+**Type:** Full-Stack Personal Finance Management Application  
+**Stack:** MERN (MongoDB, Express.js, React, Node.js)  
+**Developer:** Sandeep Jat — SRM University AP (B.Tech Computer Science & Engineering)
 
 ---
 
 ## Table of Contents
 
-1. [Project Overview](#project-overview)
-2. [Libraries and Dependencies](#libraries-and-dependencies)
-3. [Project Structure](#project-structure)
-4. [File Descriptions](#file-descriptions)
-5. [Routes and Navigation](#routes-and-navigation)
-6. [Features Implementation](#features-implementation)
-7. [Data Flow](#data-flow)
+1. [Project Overview](#1-project-overview)
+2. [Complete Feature Set](#2-complete-feature-set)
+3. [Technology Stack](#3-technology-stack)
+4. [Application Architecture](#4-application-architecture)
+5. [Frontend Architecture](#5-frontend-architecture)
+6. [Backend Architecture](#6-backend-architecture)
+7. [Database Models](#7-database-models)
+8. [Authentication & Session Security](#8-authentication--session-security)
+9. [Transaction Management](#9-transaction-management)
+10. [Dashboard & Analytics](#10-dashboard--analytics)
+11. [PDF Export](#11-pdf-export)
+12. [AI Insights Architecture](#12-ai-insights-architecture)
+13. [API Endpoint Reference](#13-api-endpoint-reference)
+14. [Security Considerations](#14-security-considerations)
+15. [Error Handling](#15-error-handling)
+16. [Responsive Design](#16-responsive-design)
+17. [Implementation Decisions](#17-implementation-decisions)
 
 ---
 
-## Project Overview
+## 1. Project Overview
 
-Spend Smart is a comprehensive personal finance management application that helps users track their income, expenses, and financial health. It features user authentication, transaction management, analytics, PDF export, and AI-powered insights.
+Spend Smart is a comprehensive personal finance management web application that enables users to:
 
-**Key Features:**
-- User authentication (Login/Register)
-- Transaction CRUD operations
-- User-specific transaction management
-- Analytics dashboard with charts
-- PDF export functionality
-- AI insights and recommendations
-- Dark/Light theme support
-- Responsive design
+- Record and manage income and expense transactions.
+- Visualize financial data through interactive charts and summaries.
+- Export financial reports to PDF.
+- Receive personalized, AI-generated financial analysis and recommendations powered by Groq.
+
+The application uses the MERN stack: **React** (Vite) for the frontend, **Node.js + Express** for the REST API backend, and **MongoDB Atlas** for persistent cloud data storage. Authentication is provided via JWT and Google OAuth.
 
 ---
 
-## Libraries and Dependencies
+## 2. Complete Feature Set
 
-### Frontend Dependencies (client/package.json)
+### Functional Features
+- **User registration** with email/password (bcrypt hashed).
+- **User login** with email/password credentials.
+- **Google OAuth sign-in** with username selection for new Google users.
+- **JWT authentication** on all protected endpoints.
+- **Absolute 24-hour session expiry** — mandatory logout regardless of activity.
+- **10-hour inactivity auto-logout** — logout if no meaningful user interaction.
+- **Transaction CRUD** — create, read, update, delete income and expense records.
+- **Bulk transaction reset** — delete all user transactions.
+- **Transaction filtering and sorting** — by type, category, date, amount.
+- **Dashboard summary** — income, expense, and balance totals.
+- **Category analytics** — pie charts, spending breakdowns.
+- **Monthly trend analytics** — line charts for income/expense over time.
+- **PDF report export** — client-side PDF generation with transaction tables.
+- **Manual AI Insights generation** — on-demand Groq-powered financial analysis.
+- **AI Insights persistence** — saved per user in MongoDB, restored on page load.
+- **Dark/Light mode** — persistent theme preference.
+- **Responsive layout** — works on mobile, tablet, and desktop.
 
-#### Core Framework
-- **react (^19.2.0)**: Core React library for building user interfaces
-  - Used for: Component-based UI architecture, state management, lifecycle management
-
-- **react-dom (^19.2.0)**: React DOM renderer
-  - Used for: Rendering React components to the DOM
-
-#### Routing
-- **react-router-dom (^7.9.6)**: Client-side routing library
-  - Used for: Navigation between pages, route protection, URL management
-  - Implementation: App.jsx - handles all route definitions and navigation
-
-#### HTTP Client
-- **axios (^1.13.2)**: Promise-based HTTP client
-  - Used for: API calls to JSON Server (GET, POST, PUT, DELETE)
-  - Implementation: utils/api.js - centralized API configuration
-
-#### Form Management
-- **react-hook-form (^7.53.2)**: Form validation and management library
-  - Used for: Login and Register forms with validation
-  - Implementation: pages/Login.jsx, pages/Register.jsx
-  - Features: Email validation, password strength validation, confirm password matching
-
-#### UI Components & Icons
-- **react-icons (^5.5.0)**: Icon library (FontAwesome, Material, etc.)
-  - Used for: Icons throughout the application (wallet, charts, user, etc.)
-  - Implementation: All components use icons for better UX
-
-#### Styling
-- **tailwindcss (^4.1.17)**: Utility-first CSS framework
-  - Used for: All styling throughout the application
-  - Implementation: Utility classes in all components
-
-- **@tailwindcss/vite (^4.1.17)**: Vite plugin for Tailwind
-  - Used for: Tailwind CSS integration with Vite build tool
-
-#### Charts & Visualization
-- **recharts (^3.5.0)**: Composable charting library built on React
-  - Used for: Analytics charts (Line charts, Pie charts)
-  - Implementation: 
-    - components/charts/LineChart.jsx - Monthly income/expense trends
-    - components/charts/CategoryChart.jsx - Expense category breakdown
-    - components/charts/IncomeChart.jsx - Income category breakdown
-    - components/charts/IncomeExpenseSavingsChart.jsx - Financial summary chart
-
-#### PDF Generation
-- **@react-pdf/renderer (^4.3.1)**: PDF generation library for React
-  - Used for: Generating PDF reports of transactions
-  - Implementation: features/pdf/PDFGenerator.jsx
-  - Features: Custom PDF layout with transactions, summaries, username, timestamp
-
-#### Notifications
-- **react-toastify (^11.0.5)**: Toast notification library
-  - Used for: User feedback (success, error, info messages)
-  - Implementation: App.jsx - ToastContainer component
-  - Usage: All CRUD operations show toast notifications
-
-#### Build Tools
-- **vite (npm:rolldown-vite@7.2.5)**: Fast build tool and dev server
-  - Used for: Development server, building production bundle
-  - Configuration: vite.config.js
-
-### Backend Dependencies (server/package.json)
-
-#### Mock API Server
-- **json-server (^1.0.0-beta.3)**: Full fake REST API server
-  - Used for: Mock backend API, data persistence
-  - Implementation: server/db.json - database file
-  - Endpoints: /users, /transactions
-  - Features: GET, POST, PUT, DELETE operations
-
-- **json-server-auth (^2.1.0)**: Authentication middleware for JSON Server
-  - Used for: User authentication (though we implemented custom auth)
-  - Note: Installed but using custom authentication logic
-
-### Dev Dependencies
-
-- **@vitejs/plugin-react**: Vite plugin for React
-- **eslint**: Code linting and quality checks
-- **@types/react**: TypeScript types for React
-- **@types/react-dom**: TypeScript types for React DOM
+### Non-Functional Requirements
+- All API routes are JWT-protected except registration and login.
+- Sensitive data (passwords) are never stored in plain text.
+- API keys (Groq, Google) are backend-only and never exposed to the frontend.
+- AI Insights ownership is enforced via `req.user._id` — never trusting frontend-supplied user IDs.
+- Token expiry is enforced both on the backend (JWT) and frontend (AuthContext timers).
 
 ---
 
-## Project Structure
+## 3. Technology Stack
+
+### Frontend
+| Package | Version | Role |
+|---|---|---|
+| React | ^19.2.0 | UI component framework |
+| React Router DOM | ^7.9.6 | Client-side routing, protected routes |
+| Axios | ^1.13.2 | HTTP client with interceptors |
+| Recharts | ^3.5.0 | Charts (line, pie) |
+| @react-pdf/renderer | ^4.3.1 | Client-side PDF generation |
+| React Hook Form | ^7.53.2 | Form state and validation |
+| React Toastify | ^11.0.5 | Notification toasts |
+| React Icons | ^5.5.0 | Icon library |
+| Tailwind CSS | ^4.1.17 | Utility-first CSS framework |
+| Vite | 7.2.5 (rolldown) | Build tool and dev server |
+
+### Backend
+| Package | Version | Role |
+|---|---|---|
+| Express.js | ^4.19.2 | REST API framework |
+| Mongoose | ^8.4.1 | MongoDB ODM |
+| groq-sdk | ^1.3.0 | Groq LLM API integration |
+| jsonwebtoken | ^9.0.2 | JWT signing and verification |
+| bcryptjs | ^2.4.3 | Password hashing |
+| google-auth-library | ^9.11.0 | Google OAuth token verification |
+| dotenv | ^16.4.5 | Environment variable loading |
+| cors | ^2.8.5 | Cross-origin request policy |
+| nodemon | ^3.1.3 | Dev auto-restart |
+
+---
+
+## 4. Application Architecture
 
 ```
-fsd_spend_xx/
-├── client/                    # Frontend React Application
-│   ├── src/
-│   │   ├── components/        # Reusable UI components
-│   │   │   ├── charts/        # Chart components
-│   │   │   ├── Footer.jsx     # Footer component
-│   │   │   ├── Loader.jsx     # Loading spinner
-│   │   │   ├── Navbar.jsx     # Navigation bar
-│   │   │   ├── ResetButton.jsx # Reset transactions button
-│   │   │   └── Sidebar.jsx    # Side navigation
-│   │   ├── context/           # React Context providers
-│   │   │   ├── AuthContext.jsx      # User authentication state
-│   │   │   ├── ThemeContext.jsx     # Theme (dark/light) state
-│   │   │   └── TransactionContext.jsx # Transaction state management
-│   │   ├── features/          # Feature-specific components
-│   │   │   ├── pdf/           # PDF generation
-│   │   │   └── transactions/  # Transaction management
-│   │   ├── pages/             # Page components (routes)
-│   │   ├── utils/             # Utility functions
-│   │   ├── App.jsx            # Main app component with routing
-│   │   └── main.jsx           # Application entry point
-│   ├── package.json
-│   └── vite.config.js
-│
-└── server/                    # Backend JSON Server
-    ├── db.json               # Database file (users + transactions)
-    └── package.json
+Browser (React SPA)
+        │
+        │  HTTP/JSON over HTTPS
+        ▼
+Express.js REST API (Node.js)
+        │
+        ├── JWT Authentication Middleware
+        ├── Transaction Controller
+        ├── Auth Controller (local + Google OAuth)
+        └── AI Insights Controller (Groq SDK)
+                │
+                ├── MongoDB Atlas
+                │     ├── users collection
+                │     ├── transactions collection
+                │     └── aiinsights collection
+                │
+                └── Groq API (external)
+                      llama-3.3-70b-versatile
 ```
 
 ---
 
-## File Descriptions
+## 5. Frontend Architecture
 
-### Core Application Files
+### Entry Point
+- `client/src/main.jsx` — renders `<App />` wrapped in all context providers.
 
-#### **client/src/main.jsx**
-- **Purpose:** Application entry point
-- **What it does:**
-  - Renders the root App component
-  - Wraps app with Context providers (ThemeProvider, AuthProvider, TransactionProvider)
-  - Initializes React application
+### Context Providers (wrapping order in `main.jsx`)
+1. `ThemeProvider` — manages dark/light mode preference (localStorage).
+2. `AuthProvider` — manages user state, session timers, and login/logout.
+3. `TransactionProvider` — fetches and manages user transactions.
 
-#### **client/src/App.jsx**
-- **Purpose:** Main application component with routing logic
-- **What it does:**
-  - Sets up React Router for navigation
-  - Defines all application routes
-  - Implements route protection (ProtectedRoute, PublicRoute)
-  - Renders layout components (Sidebar, Navbar, Footer)
-  - Configures ToastContainer for notifications
-- **Routes:**
-  - Public: `/login`, `/register`
-  - Protected: `/`, `/transactions`, `/analytics`, `/pdf`, `/insights`, `/about`, `/profile`
+### Routing (`App.jsx`)
+- `PublicRoute` — redirects authenticated users to `/`.
+- `ProtectedRoute` — redirects unauthenticated users to `/login`. Wraps all app pages with Navbar, Sidebar, Footer layout.
 
-### Context Providers (State Management)
+### Pages
+| Page | Route | Description |
+|---|---|---|
+| `Home.jsx` | `/` | Dashboard — totals, recent transactions |
+| `Transactions.jsx` | `/transactions` | Transaction list with filters and CRUD |
+| `Analytics.jsx` | `/analytics` | Charts and category breakdowns |
+| `AIInsights.jsx` | `/insights` | Manual AI generation, saved insights display |
+| `PDFExport.jsx` | `/pdf` | PDF report configuration and download |
+| `About.jsx` | `/about` | Project info, tech stack, developer info |
+| `Profile.jsx` | `/profile` | User account info |
+| `Login.jsx` | `/login` | Login form + Google Sign-In |
+| `Register.jsx` | `/register` | Registration form + Google Sign-In |
 
-#### **client/src/context/AuthContext.jsx**
-- **Purpose:** Manages user authentication state
-- **What it does:**
-  - Stores current logged-in user
-  - Provides login() function - authenticates user with email/password
-  - Provides register() function - creates new user account
-  - Provides logout() function - clears user session
-  - Persists user in localStorage
-  - Validates username uniqueness and email format
-- **Used by:** Login, Register, Navbar, Profile pages
-
-#### **client/src/context/TransactionContext.jsx**
-- **Purpose:** Manages transaction data and operations
-- **What it does:**
-  - Fetches user-specific transactions from API
-  - Provides addTransaction() - creates new transaction
-  - Provides deleteTransaction() - removes transaction
-  - Provides updateTransaction() - modifies existing transaction
-  - Provides resetAllTransactions() - clears all user transactions
-  - Sorts transactions by date (newest first)
-  - Filters transactions by userId
-- **Used by:** All pages that display or manage transactions
-
-#### **client/src/context/ThemeContext.jsx**
-- **Purpose:** Manages dark/light theme state
-- **What it does:**
-  - Toggles between dark and light themes
-  - Persists theme preference
-- **Used by:** App.jsx, Navbar (theme toggle)
-
-### Pages (Route Components)
-
-#### **client/src/pages/Login.jsx**
-- **Purpose:** User login page
-- **What it does:**
-  - Displays login form (email, password)
-  - Validates email format
-  - Password visibility toggle
-  - Calls AuthContext.login() on submit
-  - Redirects to home on success
-  - Shows error messages via toast
-- **Route:** `/login`
-- **Libraries used:** react-hook-form, react-icons
-
-#### **client/src/pages/Register.jsx**
-- **Purpose:** User registration page
-- **What it does:**
-  - Displays registration form (username, email, password, confirm password)
-  - Validates email format
-  - Validates password strength (8+ chars, uppercase, lowercase, number, special char)
-  - Validates password confirmation match
-  - Checks username uniqueness
-  - Calls AuthContext.register() on submit
-  - Redirects to home on success
-- **Route:** `/register`
-- **Libraries used:** react-hook-form, react-icons
-
-#### **client/src/pages/Home.jsx**
-- **Purpose:** Dashboard/home page
-- **What it does:**
-  - Displays financial summary cards (Total Income, Total Expense, Savings)
-  - Shows 6 most recent transactions
-  - Calculates totals using calculateTotals utility
-  - Sorts transactions by date (newest first)
-- **Route:** `/`
-- **Libraries used:** react-icons
-
-#### **client/src/pages/Transactions.jsx**
-- **Purpose:** Transaction management page
-- **What it does:**
-  - Lists all transactions with filters and sorting
-  - Integrates AddTransaction, EditTransaction, TransactionList components
-  - Provides TypeFilter and SortFilter
-  - Handles transaction CRUD operations
-- **Route:** `/transactions`
-- **Components used:** AddTransaction, EditTransaction, TransactionList, TypeFilter, SortFilter
-
-#### **client/src/pages/Analytics.jsx**
-- **Purpose:** Analytics and visualization page
-- **What it does:**
-  - Displays financial summary
-  - Shows multiple charts:
-    - Line chart for monthly trends
-    - Pie charts for category breakdowns
-    - Income/Expense/Savings comparison chart
-  - Calculates category totals
-- **Route:** `/analytics`
-- **Libraries used:** recharts
-- **Components used:** LineChart, CategoryChart, IncomeChart, IncomeExpenseSavingsChart
-
-#### **client/src/pages/PDFExport.jsx**
-- **Purpose:** PDF report generation page
-- **What it does:**
-  - Provides filters for transactions (type, category, month)
-  - Shows summary of filtered transactions
-  - Generates and downloads PDF report
-  - Includes username and timestamp in PDF
-- **Route:** `/pdf`
-- **Libraries used:** @react-pdf/renderer
-- **Components used:** PDFGenerator
-
-#### **client/src/pages/AIInsights.jsx**
-- **Purpose:** AI-powered financial insights page
-- **What it does:**
-  - Displays savings rate calculation
-  - Shows average expense per transaction
-  - Provides financial tips based on balance
-  - Shows quick financial summary
-- **Route:** `/insights`
-- **Libraries used:** react-icons
-
-#### **client/src/pages/Profile.jsx**
-- **Purpose:** User profile page
-- **What it does:**
-  - Displays user information (username, email)
-  - Shows user avatar
-  - Read-only profile view
-- **Route:** `/profile`
-- **Libraries used:** react-icons
-
-#### **client/src/pages/About.jsx**
-- **Purpose:** About/Information page
-- **What it does:**
-  - Displays project information
-  - Shows team details (GenX - Full Stack Developers)
-  - Lists features and technology stack
-  - Provides GitHub link
-- **Route:** `/about`
-- **Libraries used:** react-icons
-
-### Components
-
-#### **client/src/components/Navbar.jsx**
-- **Purpose:** Top navigation bar
-- **What it does:**
-  - Displays app title
-  - Shows user dropdown menu (username, profile, logout)
-  - Handles logout functionality
-  - Navigates to profile page
-- **Used by:** App.jsx (all protected routes)
-
-#### **client/src/components/Sidebar.jsx**
-- **Purpose:** Left side navigation menu
-- **What it does:**
-  - Displays navigation links (Home, Transactions, Analytics, PDF, Insights, About)
-  - Highlights active route
-  - Provides quick navigation
-- **Used by:** App.jsx (all protected routes)
-
-#### **client/src/components/Footer.jsx**
-- **Purpose:** Footer component
-- **What it does:**
-  - Displays footer information
-  - Shows copyright/credits
-- **Used by:** App.jsx (all protected routes)
-
-#### **client/src/components/ResetButton.jsx**
-- **Purpose:** Reset all transactions button
-- **What it does:**
-  - Provides confirmation dialog
-  - Calls TransactionContext.resetAllTransactions()
-  - Shows success/error toast
-- **Used by:** Transactions page
-
-### Chart Components
-
-#### **client/src/components/charts/LineChart.jsx**
-- **Purpose:** Monthly income/expense line chart
-- **What it does:**
-  - Displays monthly trends
-  - Shows income and expense lines
-  - Uses Recharts library
-- **Used by:** Analytics page
-
-#### **client/src/components/charts/CategoryChart.jsx**
-- **Purpose:** Expense category pie chart
-- **What it does:**
-  - Shows expense breakdown by category
-  - Displays percentages
-  - Color-coded categories
-- **Used by:** Analytics page
-
-#### **client/src/components/charts/IncomeChart.jsx**
-- **Purpose:** Income category pie chart
-- **What it does:**
-  - Shows income breakdown by category
-  - Displays percentages
-- **Used by:** Analytics page
-
-#### **client/src/components/charts/IncomeExpenseSavingsChart.jsx**
-- **Purpose:** Financial summary bar chart
-- **What it does:**
-  - Compares Income, Expense, and Savings
-  - Visual representation of financial health
-- **Used by:** Analytics page
-
-### Transaction Features
-
-#### **client/src/features/transactions/AddTransaction.jsx**
-- **Purpose:** Add new transaction modal
-- **What it does:**
-  - Displays form (type, amount, category, date, description)
-  - Toggle between income/expense
-  - Validates required fields
-  - Calls TransactionContext.addTransaction()
-  - Shows success/error toast
-- **Used by:** Transactions page
-
-#### **client/src/features/transactions/EditTransaction.jsx**
-- **Purpose:** Edit existing transaction modal
-- **What it does:**
-  - Pre-fills form with transaction data
-  - Allows modification of all fields
-  - Calls TransactionContext.updateTransaction()
-  - Shows success/error toast
-- **Used by:** Transactions page
-
-#### **client/src/features/transactions/TransactionList.jsx**
-- **Purpose:** Display list of transactions
-- **What it does:**
-  - Renders transaction cards
-  - Shows transaction details (type, amount, category, date, description)
-  - Provides edit and delete buttons
-  - Color-coded by type (green for income, red for expense)
-- **Used by:** Transactions page
-
-#### **client/src/features/transactions/TransactionCard.jsx**
-- **Purpose:** Individual transaction card component
-- **What it does:**
-  - Displays single transaction information
-  - Shows edit/delete actions
-- **Used by:** TransactionList
-
-#### **client/src/features/transactions/filters/TypeFilter.jsx**
-- **Purpose:** Filter transactions by type
-- **What it does:**
-  - Dropdown to filter by "All", "Income", or "Expense"
-  - Updates filtered transaction list
-- **Used by:** Transactions page
-
-#### **client/src/features/transactions/filters/SortFilter.jsx**
-- **Purpose:** Sort transactions
-- **What it does:**
-  - Options: Latest, Oldest, Amount High-Low, Amount Low-High
-  - Updates sorted transaction list
-- **Used by:** Transactions page
-
-### PDF Feature
-
-#### **client/src/features/pdf/PDFGenerator.jsx**
-- **Purpose:** PDF report generation
-- **What it does:**
-  - Creates PDF document with transactions
-  - Includes header with username and timestamp
-  - Shows summary (income, expense, savings)
-  - Displays category breakdown
-  - Lists all transactions in table format
-  - Downloads PDF file
-- **Libraries used:** @react-pdf/renderer
-- **Used by:** PDFExport page
-
-### Utilities
-
-#### **client/src/utils/api.js**
-- **Purpose:** API configuration
-- **What it does:**
-  - Creates axios instance with base URL (http://localhost:5000)
-  - Centralized API configuration
-  - Used by all API calls
-- **Used by:** All contexts that make API calls
-
-#### **client/src/utils/calculateTotals.js**
-- **Purpose:** Calculate financial totals
-- **What it does:**
-  - Calculates total income from transactions
-  - Calculates total expense from transactions
-  - Calculates balance (income - expense)
-  - Returns totals object
-- **Used by:** Home, Analytics, AIInsights pages
-
-### Styling Files
-
-#### **client/src/index.css**
-- **Purpose:** Global styles and animations
-- **What it does:**
-  - Imports Tailwind CSS
-  - Defines custom animations (fadeIn, slideIn, float, bounce, etc.)
-  - Global CSS classes
-- **Used by:** Entire application
-
-#### **client/src/styles/global.css**
-- **Purpose:** Additional global styles (currently unused)
-- **Note:** Reserved for future global styles
-
-### Backend Files
-
-#### **server/db.json**
-- **Purpose:** Database file for JSON Server
-- **What it does:**
-  - Stores all users data (id, username, email, password)
-  - Stores all transactions (id, userId, type, amount, category, date, description)
-  - Links transactions to users via userId
-  - Used by JSON Server to create REST API endpoints
-- **Endpoints created:**
-  - GET/POST /users
-  - GET/PUT/DELETE /users/:id
-  - GET/POST /transactions
-  - GET/PUT/DELETE /transactions/:id
-  - GET /transactions?userId=:id (filter by user)
+### Key Utilities
+- `client/src/utils/api.js` — Axios instance with base URL from `VITE_API_BASE_URL` env, JWT auth header interceptor, and 401 response interceptor (triggers session expiry).
+- `client/src/utils/calculateTotals.js` — Pure function for local income/expense/balance calculation.
 
 ---
 
-## Routes and Navigation
+## 6. Backend Architecture
 
-### Route Structure
+### Entry Point (`server/index.js`)
+- Loads dotenv, connects to MongoDB, registers Express middleware.
+- CORS configured via `ALLOWED_ORIGINS` environment variable.
+- Routes registered under `/api/auth`, `/api/transactions`, `/api/ai`.
+- Health check at `GET /api/health`.
 
-The application uses **React Router DOM** for client-side routing. Routes are defined in `App.jsx`.
+### Controllers
+- `authController.js` — register, login, Google OAuth verification, Google registration completion.
+- `transactionController.js` — CRUD + bulk reset, all filtered by `userId` from JWT.
+- `aiController.js` — `getSavedInsights` (GET, no Groq) and `generateInsights` (POST, Groq + persist).
 
-### Public Routes (No Authentication Required)
+### Middleware
+- `authMiddleware.js` — `protect` function: extracts Bearer token, verifies JWT, fetches user from DB, attaches to `req.user`.
 
-#### `/login`
-- **Component:** Login.jsx
-- **Purpose:** User login page
-- **Protection:** PublicRoute - redirects to home if already logged in
-- **Features:**
-  - Email and password input
-  - Form validation
-  - Password visibility toggle
-  - Link to register page
-- **Why used:** Entry point for authenticated users
-
-#### `/register`
-- **Component:** Register.jsx
-- **Purpose:** User registration page
-- **Protection:** PublicRoute - redirects to home if already logged in
-- **Features:**
-  - Username, email, password, confirm password inputs
-  - Email format validation
-  - Password strength validation
-  - Username uniqueness check
-  - Link to login page
-- **Why used:** Allows new users to create accounts
-
-### Protected Routes (Authentication Required)
-
-All protected routes are wrapped in `ProtectedRoute` component which:
-- Checks if user is logged in
-- Redirects to `/login` if not authenticated
-- Shows loading state while checking authentication
-
-#### `/` (Home/Dashboard)
-- **Component:** Home.jsx
-- **Purpose:** Main dashboard showing financial overview
-- **Features:**
-  - Financial summary cards (Income, Expense, Savings)
-  - Recent 6 transactions
-  - Quick financial overview
-- **Why used:** Primary landing page after login, gives users immediate financial snapshot
-
-#### `/transactions`
-- **Component:** Transactions.jsx
-- **Purpose:** Transaction management page
-- **Features:**
-  - View all transactions
-  - Add new transactions
-  - Edit existing transactions
-  - Delete transactions
-  - Filter by type
-  - Sort transactions
-  - Reset all transactions
-- **Why used:** Core functionality - users need to manage their transactions
-
-#### `/analytics`
-- **Component:** Analytics.jsx
-- **Purpose:** Financial analytics and visualizations
-- **Features:**
-  - Line chart for monthly trends
-  - Pie charts for category breakdowns
-  - Income/Expense/Savings comparison
-  - Category-wise totals
-- **Why used:** Helps users understand spending patterns and financial trends
-
-#### `/pdf`
-- **Component:** PDFExport.jsx
-- **Purpose:** Generate and download PDF reports
-- **Features:**
-  - Filter transactions before export
-  - Monthly report option
-  - Category and type filters
-  - PDF download with username and timestamp
-- **Why used:** Users need to export their financial data for records or sharing
-
-#### `/insights`
-- **Component:** AIInsights.jsx
-- **Purpose:** AI-powered financial insights
-- **Features:**
-  - Savings rate calculation
-  - Average expense per transaction
-  - Financial tips
-  - Quick summary
-- **Why used:** Provides intelligent insights to help users make better financial decisions
-
-#### `/about`
-- **Component:** About.jsx
-- **Purpose:** Project information and team details
-- **Features:**
-  - Project overview
-  - Team information (GenX)
-  - Technology stack
-  - Features list
-  - GitHub link
-- **Why used:** Provides information about the project and developers
-
-#### `/profile`
-- **Component:** Profile.jsx
-- **Purpose:** User profile page
-- **Features:**
-  - Display username
-  - Display email
-  - User avatar
-- **Why used:** Users need to view their account information
-
-### Route Protection Logic
-
-**ProtectedRoute Component:**
-- Checks AuthContext for logged-in user
-- Shows loading state while checking
-- Redirects to `/login` if user not authenticated
-- Renders children (protected content) if authenticated
-
-**PublicRoute Component:**
-- Checks AuthContext for logged-in user
-- Shows loading state while checking
-- Redirects to `/` (home) if user already logged in
-- Renders children (login/register) if not authenticated
-
-**Why Route Protection:**
-- Prevents unauthorized access to user data
-- Ensures transactions are user-specific
-- Provides secure application experience
-- Redirects users to appropriate pages based on auth state
+### Utils
+- `utils/jwt.js` — `generateToken(userId)`: signs JWT with 24-hour expiry.
 
 ---
 
-## Features Implementation
+## 7. Database Models
 
-### 1. User Authentication
+### User (`models/User.js`)
+```
+userId         ObjectId   (auto-generated _id)
+username       String     required, trimmed
+email          String     required, unique, lowercase
+password       String     required unless isGoogleUser (bcrypt hashed)
+isGoogleUser   Boolean    default false
+googleId       String     optional
+createdAt      Date       auto (timestamps)
+updatedAt      Date       auto (timestamps)
+```
+- `toJSON` transform: exposes `id` (string), hides `_id`, `__v`, `password`.
+- `comparePassword()` instance method for bcrypt comparison.
 
-**Implementation:**
-- Login with email and password
-- Registration with validation
-- Session persistence (localStorage)
-- Protected routes
+### Transaction (`models/Transaction.js`)
+```
+userId         ObjectId   ref User, required
+type           String     enum: ["income", "expense"], required
+amount         Number     required
+category       String     required
+date           String     format YYYY-MM-DD, required
+description    String     default ""
+createdAt      Date       auto
+updatedAt      Date       auto
+```
+- All transaction queries filter by `userId: req.user._id` — users cannot access other users' data.
 
-**Files:**
-- `context/AuthContext.jsx` - Authentication logic
-- `pages/Login.jsx` - Login UI
-- `pages/Register.jsx` - Registration UI
-- `App.jsx` - Route protection
-
-**Libraries:**
-- react-hook-form - Form validation
-- axios - API calls
-
-### 2. Transaction Management
-
-**Implementation:**
-- CRUD operations (Create, Read, Update, Delete)
-- User-specific transactions
-- Filtering and sorting
-- Real-time updates
-
-**Files:**
-- `context/TransactionContext.jsx` - Transaction state management
-- `features/transactions/AddTransaction.jsx` - Add transaction
-- `features/transactions/EditTransaction.jsx` - Edit transaction
-- `features/transactions/TransactionList.jsx` - Display transactions
-- `pages/Transactions.jsx` - Transaction management page
-
-**Libraries:**
-- axios - API calls to JSON Server
-
-### 3. Analytics & Charts
-
-**Implementation:**
-- Multiple chart types (Line, Pie, Bar)
-- Category breakdowns
-- Monthly trends
-- Financial summaries
-
-**Files:**
-- `components/charts/LineChart.jsx`
-- `components/charts/CategoryChart.jsx`
-- `components/charts/IncomeChart.jsx`
-- `components/charts/IncomeExpenseSavingsChart.jsx`
-- `pages/Analytics.jsx`
-
-**Libraries:**
-- recharts - Chart rendering
-
-### 4. PDF Export
-
-**Implementation:**
-- Generate PDF reports
-- Include username and timestamp
-- Filter transactions before export
-- Custom PDF layout
-
-**Files:**
-- `features/pdf/PDFGenerator.jsx`
-- `pages/PDFExport.jsx`
-
-**Libraries:**
-- @react-pdf/renderer - PDF generation
-
-### 5. UI/UX Features
-
-**Implementation:**
-- Dark/Light theme support
-- Responsive design
-- Animations and transitions
-- Toast notifications
-- Password visibility toggle
-
-**Files:**
-- `context/ThemeContext.jsx`
-- `index.css` - Animations
-- All components use Tailwind CSS
-
-**Libraries:**
-- tailwindcss - Styling
-- react-toastify - Notifications
-- react-icons - Icons
+### AIInsights (`models/AIInsights.js`)
+```
+userId         ObjectId   ref User, required, unique (one per user)
+data           Mixed      validated JSON from Groq
+generatedAt    Date       updated on each successful generation
+createdAt      Date       auto
+updatedAt      Date       auto
+```
+- Upserted (findOneAndUpdate with `upsert: true`) on each successful generation.
+- Retrieved on page load via GET without any Groq call.
+- Ownership enforced: all queries use `userId: req.user._id`.
 
 ---
 
-## Data Flow
+## 8. Authentication & Session Security
 
-### Authentication Flow
+### JWT Flow
+1. User submits credentials (or Google token).
+2. Backend verifies and calls `generateToken(user._id)` → signs JWT with 24h expiry.
+3. Token and user object returned in response body.
+4. Frontend stores `{ ...userData, token }` in `localStorage` as key `"user"`.
+5. Axios interceptor reads token from localStorage and adds `Authorization: Bearer <token>` to every request.
+6. `authMiddleware.protect` verifies token, fetches user from DB, attaches to `req.user`.
 
-1. User visits `/login` or `/register`
-2. Fills form (validated with react-hook-form)
-3. Submits form → calls AuthContext.login() or register()
-4. AuthContext makes API call to JSON Server
-5. On success, user data stored in localStorage
-6. User state updated in AuthContext
-7. Redirect to home page
-8. Protected routes now accessible
+### Absolute 24-Hour Session Expiry
+- `generateToken` uses `expiresIn: "24h"` — JWT itself expires on the backend.
+- At login/register, `AuthContext` writes `loginTimestamp = Date.now()` to localStorage.
+- A `setInterval` running every 60 seconds checks: if `now - loginTimestamp >= 24h` → logout.
+- On page load/mount, this check runs before restoring the user session.
+- User activity **never** resets the `loginTimestamp`.
+- When a JWT expires and a request is made, the 401 response triggers the `sessionExpired` event → AuthContext auto-logs out.
 
-### Transaction Flow
+### 10-Hour Inactivity Logout
+- `AuthContext` listens to `mousemove`, `keydown`, `click`, `touchstart`, `pointerdown` events (passive).
+- Handler is throttled: `lastActivityTimestamp` in localStorage is updated at most once per minute.
+- The 60-second interval also checks: if `now - lastActivityTimestamp >= 10h` → logout.
+- On page load/mount, if `lastActivityTimestamp` is stale (>10h), the session is cleared before restoring.
 
-1. User adds transaction → AddTransaction component
-2. Form submitted → TransactionContext.addTransaction()
-3. API call to POST /transactions with userId
-4. JSON Server saves to db.json
-5. TransactionContext updates local state
-6. UI re-renders with new transaction
-7. Toast notification shown
+### Logout
+Clears `user`, `loginTimestamp`, `lastActivityTimestamp` from localStorage. Fires `userChanged` event so TransactionContext resets.
 
-### Data Fetching Flow
+### Event Listeners & Memory Leak Prevention
+- All activity event listeners and the session interval are cleaned up in the `useEffect` return function.
+- Cleanup runs when the user state becomes null (logout) or on component unmount.
 
-1. App loads → TransactionContext.fetchTransactions()
-2. Gets userId from localStorage (via AuthContext)
-3. API call to GET /transactions?userId=:id
-4. JSON Server returns user's transactions
-5. Transactions stored in TransactionContext state
-6. Components consume transactions via useContext
-7. UI displays transactions
-
-### PDF Generation Flow
-
-1. User filters transactions on PDFExport page
-2. Clicks "Download PDF"
-3. PDFGenerator.generatePDF() called with filtered data
-4. @react-pdf/renderer creates PDF document
-5. PDF includes: username, timestamp, summary, transactions
-6. PDF blob created and downloaded
-7. Toast notification shown
+### Protected Routes
+- Frontend: `ProtectedRoute` component redirects unauthenticated users to `/login`.
+- Backend: `protect` middleware on all transaction and AI routes.
 
 ---
 
-## API Endpoints (JSON Server)
+## 9. Transaction Management
 
-### Users Endpoints
+- **Add** — POST `/api/transactions` with `{ type, amount, category, date, description }`.
+- **Read** — GET `/api/transactions` — returns all transactions for `req.user._id`, sorted latest first.
+- **Update** — PUT `/api/transactions/:id` — validates ownership via userId in the document.
+- **Delete** — DELETE `/api/transactions/:id` — validates ownership.
+- **Bulk reset** — DELETE `/api/transactions` — removes all documents for `req.user._id`.
 
-- **GET /users** - Get all users
-- **GET /users/:id** - Get specific user
-- **POST /users** - Create new user
-- **PUT /users/:id** - Update user
-- **DELETE /users/:id** - Delete user
-
-### Transactions Endpoints
-
-- **GET /transactions** - Get all transactions
-- **GET /transactions?userId=:id** - Get user-specific transactions
-- **GET /transactions/:id** - Get specific transaction
-- **POST /transactions** - Create new transaction
-- **PUT /transactions/:id** - Update transaction
-- **DELETE /transactions/:id** - Delete transaction
+State is managed in `TransactionContext`, which listens to `userChanged` and `storage` events to refresh when the user changes.
 
 ---
 
-## Summary
+## 10. Dashboard & Analytics
 
-This project is a full-stack personal finance management application built with:
-- **Frontend:** React 19, React Router, Tailwind CSS, Recharts, React PDF
-- **Backend:** JSON Server (mock REST API)
-- **State Management:** React Context API
-- **Form Handling:** React Hook Form
-- **Styling:** Tailwind CSS with custom animations
-- **Features:** Authentication, CRUD operations, Analytics, PDF Export, AI Insights
+### Dashboard (`Home.jsx`)
+- Displays total income, total expense, and balance.
+- Shows recent transactions list.
+- Calculates totals using `calculateTotals(transactions)` locally in the browser.
 
-The application follows modern React best practices with component-based architecture, context-based state management, and protected routing for security.
+### Analytics (`Analytics.jsx`)
+- **Line Chart** — monthly income vs expense trends using Recharts `LineChart`.
+- **Pie Chart** — category-wise spending breakdown.
+- Data computed from the `transactions` array in `TransactionContext`.
+- No additional API calls — all calculations are client-side.
 
 ---
 
-**Document Generated:** 2025  
-**Project:** Spend Smart  
-**Developed by:** GenX - Full Stack Developers
+## 11. PDF Export
 
+- Implemented with `@react-pdf/renderer` — entirely client-side.
+- Generates a structured PDF document with:
+  - User info and report generation date.
+  - Summary table (income, expense, balance).
+  - Full transaction table sorted by date.
+- PDF is downloaded directly in the browser without any server request.
 
+---
 
+## 12. AI Insights Architecture
 
+### Design Principles
+1. **Manual trigger only** — Groq is never called automatically.
+2. **Persistent storage** — one MongoDB document per user (`AIInsights` model).
+3. **Load vs Generate separation** — GET retrieves saved data; POST calls Groq.
+4. **Privacy-first** — only aggregated numbers (no raw descriptions) sent to Groq.
+5. **Failure safety** — failed refreshes preserve previous successful insights.
+
+### Frontend Flow (`AIInsights.jsx`)
+
+**On mount (page load):**
+```
+GET /api/ai/insights
+  → hasData: true  → display saved insights (no Groq)
+  → hasData: false → show "Get AI Insights" button (first-time user)
+```
+
+**On button click ("Get AI Insights" or "Refresh AI Insights"):**
+```
+useRef lock check (isGeneratingRef) → if in-flight, return
+  → isGeneratingRef.current = true
+  → setGenerating(true), disable button
+  → POST /api/ai/insights
+  → on success: setInsightsData(result.data), setGeneratedAt(...)
+  → on failure: setError(msg), preserve existing insightsData
+  → finally: isGeneratingRef.current = false, setGenerating(false)
+```
+
+### Backend Flow (`aiController.js`)
+
+**GET `/api/ai/insights` — `getSavedInsights`:**
+```
+req.user._id → AIInsights.findOne({ userId })
+  → found:     return { hasData: true, data, generatedAt }
+  → not found: return { hasData: false }
+```
+
+**POST `/api/ai/insights` — `generateInsights`:**
+```
+Check inFlightRequests Map (per-user lock) → if locked, return 429
+Set inFlightRequests[userId] = true
+  → check GROQ_API_KEY
+  → fetch user transactions from MongoDB
+  → calculate aggregated stats locally
+  → call Groq SDK (llama-3.3-70b-versatile, JSON mode)
+  → parse and validate JSON response
+  → AIInsights.findOneAndUpdate({ userId }, { data, generatedAt }, { upsert: true })
+  → return { success: true, data, generatedAt }
+finally: inFlightRequests.delete(userId)
+```
+
+### Groq Prompt Configuration
+- **Model:** `llama-3.3-70b-versatile`
+- **Response format:** `{ type: "json_object" }` (JSON mode)
+- **System prompt:** Enforces exact JSON schema with `summary`, `financialHealth`, `insights`, `recommendations`, `spendingAnalysis`, `savingsAnalysis`.
+- **User message:** Aggregated stats object (no raw transaction descriptions).
+
+### Duplicate Request Prevention
+| Layer | Mechanism |
+|---|---|
+| Frontend | `useRef` boolean lock (`isGeneratingRef`) + disabled button state |
+| Backend | Server-side `Map` per userId (`inFlightRequests`) — returns 429 if in-flight |
+
+---
+
+## 13. API Endpoint Reference
+
+Base URL: `http://localhost:5000/api` (dev) / `VITE_API_BASE_URL` (production)
+
+### Auth (`/api/auth`) — Public
+| Method | Path | Body | Response |
+|---|---|---|---|
+| POST | `/register` | `{ username, email, password }` | `{ user, token }` |
+| POST | `/login` | `{ email, password }` | `{ user, token }` |
+| POST | `/google` | `{ token }` | `{ isNewUser, user?, token? }` |
+| POST | `/google/register` | `{ username, email, googleId, token }` | `{ user, token }` |
+
+### Transactions (`/api/transactions`) — Protected
+| Method | Path | Body | Response |
+|---|---|---|---|
+| GET | `/` | — | `[Transaction]` |
+| POST | `/` | `{ type, amount, category, date, description }` | `Transaction` |
+| PUT | `/:id` | `{ type, amount, category, date, description }` | `Transaction` |
+| DELETE | `/:id` | — | 200 |
+| DELETE | `/` | — | 200 |
+
+### AI Insights (`/api/ai`) — Protected
+| Method | Path | Body | Response |
+|---|---|---|---|
+| GET | `/insights` | — | `{ success, hasData, data?, generatedAt? }` |
+| POST | `/insights` | — | `{ success, data, generatedAt }` or `{ success, empty }` |
+
+### Health
+| Method | Path | Response |
+|---|---|---|
+| GET | `/api/health` | `{ status: "ok", message }` |
+
+---
+
+## 14. Security Considerations
+
+### Implemented
+- **Password hashing** — bcrypt with salt rounds of 10.
+- **JWT backend expiry** — 24h enforced by `jsonwebtoken`.
+- **Frontend session enforcement** — 24h absolute and 10h inactivity checks.
+- **API key isolation** — `GROQ_API_KEY` only exists server-side; never sent to the client.
+- **Data ownership** — All queries use `req.user._id` from the verified JWT; frontend-supplied user IDs are never trusted.
+- **CORS** — Configurable `ALLOWED_ORIGINS` environment variable; not open in production.
+- **Env file protection** — `.env` is in `.gitignore`; `.env.example` has no real secrets.
+- **Google token verification** — Re-verified on `googleRegister` flow.
+- **401 handling** — Expired tokens trigger automatic frontend logout via Axios response interceptor.
+- **Duplicate request prevention** — Server-side Map + frontend ref lock for AI generation.
+- **Input validation** — Required fields checked at controller level before DB writes.
+
+### Notes
+- The fallback JWT secret in source code is a development convenience. In production, always set `JWT_SECRET` in environment variables.
+- Google OAuth fallback decoding (when `GOOGLE_CLIENT_ID` is not set) is intended for development only and should not be relied on in production.
+
+---
+
+## 15. Error Handling
+
+### Backend
+- Missing required fields → 400 with descriptive message.
+- Invalid/expired JWT → 401 `{ message: "Not authorized, token failed" }`.
+- Resource not found (e.g., transaction) → 404.
+- Server errors → 500 with `message`. Stack trace only returned in development (`NODE_ENV !== "production"`).
+- Groq parse failure → 500 `{ message: "Failed to parse insights generated by AI." }`.
+- In-flight duplicate request → 429 `{ message: "A generation request is already in progress." }`.
+- Missing Groq API key → 400 `{ errorType: "MISSING_API_KEY", message }`.
+
+### Frontend
+- All API errors display via `react-toastify` notifications.
+- AI Insights errors are displayed non-destructively — previous successful insights remain visible.
+- `MISSING_API_KEY` error shows an instructions card with setup steps.
+- 401 responses trigger automatic logout and redirect to `/login`.
+- Component-level error state avoids white screens (no unhandled promise rejections thrown to React).
+
+---
+
+## 16. Responsive Design
+
+- **Tailwind CSS** responsive breakpoints used throughout.
+- **Sidebar** — fixed on desktop (≥1024px), collapsible overlay on mobile/tablet.
+- **Grids** — responsive grid layouts for cards (1 col mobile → 2 col tablet → 3-4 col desktop).
+- **Charts** — Recharts `ResponsiveContainer` ensures chart sizing adapts to viewport.
+- **Navigation** — Hamburger menu trigger on mobile via `Navbar`.
+- **Forms** — full-width on mobile, constrained on larger screens.
+
+---
+
+## 17. Implementation Decisions
+
+### Why Manual AI Generation (not auto-fetch)?
+Auto-fetching on page load would call Groq every time a user visits the page, navigates away, or refreshes. This wastes API quota and creates unnecessary latency. Manual generation gives users control, reduces API costs, and ensures insights load instantly from the database on subsequent visits.
+
+### Why MongoDB for AI Insights Persistence?
+The project already uses MongoDB for users and transactions. Adding a `AIInsights` model is the cleanest path — it reuses the existing infrastructure, Mongoose schema validation, and authentication pattern without introducing a new service.
+
+### Why One Document Per User (`unique: true` on `userId`)?
+Only the most recent successful analysis is useful. Using `findOneAndUpdate` with `upsert: true` ensures exactly one record per user, kept up to date. This avoids unbounded growth of historical AI data.
+
+### Why `useRef` for Duplicate Prevention (not just disabled button)?
+The disabled button prevents UI-level duplicate clicks, but React's state updates are async — a user could theoretically double-click before the state re-render. `useRef` is synchronous and provides an immediate lock at function call time.
+
+### Why 60-Second Check Interval for Session Expiry?
+Polling every second would create unnecessary CPU work. 60 seconds provides a reasonable balance — in the worst case, the user might remain logged in up to 60 seconds past expiry before the check fires. This is acceptable for UI-side enforcement, since the backend (JWT expiry) enforces the hard limit on every API call.
+
+### Why `ALLOWED_ORIGINS` Instead of Open CORS?
+Open `cors()` allows any origin to make credentialed requests to the API. In production, this would allow any site to attempt cross-origin requests. Restricting to known origins is a basic but important security practice.
+
+### AI Privacy Design
+Only aggregated statistical values (totals, rates, category sums) are sent to Groq. Raw transaction descriptions, user emails, and IDs are never forwarded. This ensures users' personal financial details are not processed by the external AI service.

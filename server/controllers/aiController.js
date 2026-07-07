@@ -1,11 +1,58 @@
 const Transaction = require("../models/Transaction");
+const AIInsights = require("../models/AIInsights");
 const Groq = require("groq-sdk");
 
-// @desc    Get AI-driven savings insights and recommendations
+// In-flight guard: prevents concurrent duplicate Groq requests per user.
+// Key: userId string → true while a request is in progress.
+const inFlightRequests = new Map();
+
+// @desc    Get the user's latest saved AI Insights (NO Groq call)
 // @route   GET /api/ai/insights
 // @access  Private
-const getAIInsights = async (req, res) => {
+const getSavedInsights = async (req, res) => {
   try {
+    const saved = await AIInsights.findOne({ userId: req.user._id });
+
+    if (!saved) {
+      return res.json({
+        success: true,
+        hasData: false,
+        message: "No AI Insights generated yet.",
+      });
+    }
+
+    return res.json({
+      success: true,
+      hasData: true,
+      data: saved.data,
+      generatedAt: saved.generatedAt,
+    });
+  } catch (error) {
+    console.error("getSavedInsights error:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Server error while retrieving saved AI Insights.",
+    });
+  }
+};
+
+// @desc    Generate new AI Insights via Groq and save result per user
+// @route   POST /api/ai/insights
+// @access  Private
+const generateInsights = async (req, res) => {
+  const userId = req.user._id.toString();
+
+  // Duplicate request guard
+  if (inFlightRequests.get(userId)) {
+    return res.status(429).json({
+      success: false,
+      message: "A generation request is already in progress. Please wait.",
+    });
+  }
+
+  try {
+    inFlightRequests.set(userId, true);
+
     // 1. Check for Groq API Key
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
@@ -16,18 +63,18 @@ const getAIInsights = async (req, res) => {
       });
     }
 
-    // 2. Fetch user transactions to serve as context for the AI model
+    // 2. Fetch user transactions
     const transactions = await Transaction.find({ userId: req.user._id });
 
     if (!transactions || transactions.length === 0) {
       return res.json({
         success: true,
         empty: true,
-        message: "No transaction history found yet. Add some income or expense transactions to unlock personalized AI savings insights!",
+        message: "No transaction history found. Add income or expense transactions to unlock AI insights.",
       });
     }
 
-    // 3. Calculate useful financial statistics locally
+    // 3. Calculate financial statistics locally (no raw data sent to Groq)
     const totalIncome = transactions
       .filter((t) => t.type === "income")
       .reduce((sum, t) => sum + t.amount, 0);
@@ -40,19 +87,21 @@ const getAIInsights = async (req, res) => {
     const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
 
     const expenses = transactions.filter((t) => t.type === "expense");
-    
-    const avgTransactionAmount = transactions.length > 0
-      ? transactions.reduce((sum, t) => sum + t.amount, 0) / transactions.length
-      : 0;
 
-    const avgExpense = expenses.length > 0
-      ? totalExpense / expenses.length
-      : 0;
+    const avgTransactionAmount =
+      transactions.length > 0
+        ? transactions.reduce((sum, t) => sum + t.amount, 0) / transactions.length
+        : 0;
+
+    const avgExpense = expenses.length > 0 ? totalExpense / expenses.length : 0;
 
     // Largest expense
     let largestExpense = null;
     if (expenses.length > 0) {
-      largestExpense = expenses.reduce((max, t) => (t.amount > max.amount ? t : max), expenses[0]);
+      largestExpense = expenses.reduce(
+        (max, t) => (t.amount > max.amount ? t : max),
+        expenses[0]
+      );
     }
 
     // Category-wise spending
@@ -82,7 +131,7 @@ const getAIInsights = async (req, res) => {
     const monthlyTrends = {};
     transactions.forEach((t) => {
       if (t.date) {
-        const month = t.date.substring(0, 7); // "YYYY-MM"
+        const month = t.date.substring(0, 7);
         if (!monthlyTrends[month]) {
           monthlyTrends[month] = { income: 0, expense: 0 };
         }
@@ -94,7 +143,6 @@ const getAIInsights = async (req, res) => {
       }
     });
 
-    // Build condensed financial profile for prompt
     const financialProfile = {
       totalIncome,
       totalExpense,
@@ -166,12 +214,12 @@ You MUST respond with a single valid JSON object containing exactly the followin
     "observation": "Short observation"
   }
 }
-Do not wrap your output in markdown code blocks like \`\`\`json. Return only raw parseable JSON.`
+Do not wrap your output in markdown code blocks like \`\`\`json. Return only raw parseable JSON.`,
         },
         {
           role: "user",
-          content: `Here is my financial profile:\n${JSON.stringify(financialProfile, null, 2)}`
-        }
+          content: `Here is my financial profile:\n${JSON.stringify(financialProfile, null, 2)}`,
+        },
       ],
       model: "llama-3.3-70b-versatile",
       response_format: { type: "json_object" },
@@ -182,7 +230,7 @@ Do not wrap your output in markdown code blocks like \`\`\`json. Return only raw
     try {
       parsed = JSON.parse(responseText);
     } catch (parseError) {
-      console.error("Failed to parse Groq response as JSON:", parseError, responseText);
+      console.error("Failed to parse Groq response as JSON:", parseError.message);
       return res.status(500).json({
         success: false,
         message: "Failed to parse insights generated by AI.",
@@ -194,47 +242,71 @@ Do not wrap your output in markdown code blocks like \`\`\`json. Return only raw
       summary: parsed.summary || "No summary available at this time.",
       financialHealth: {
         status: parsed.financialHealth?.status || "Moderate",
-        score: typeof parsed.financialHealth?.score === "number" ? parsed.financialHealth.score : 50,
-        explanation: parsed.financialHealth?.explanation || "Financial health assessment complete."
+        score:
+          typeof parsed.financialHealth?.score === "number"
+            ? parsed.financialHealth.score
+            : 50,
+        explanation:
+          parsed.financialHealth?.explanation || "Financial health assessment complete.",
       },
       insights: Array.isArray(parsed.insights)
-        ? parsed.insights.map(item => ({
+        ? parsed.insights.map((item) => ({
             title: item.title || "Insight",
             description: item.description || "",
-            type: ["positive", "warning", "neutral"].includes(item.type?.toLowerCase()) ? item.type.toLowerCase() : "neutral"
+            type: ["positive", "warning", "neutral"].includes(item.type?.toLowerCase())
+              ? item.type.toLowerCase()
+              : "neutral",
           }))
         : [],
       recommendations: Array.isArray(parsed.recommendations)
-        ? parsed.recommendations.map(item => ({
+        ? parsed.recommendations.map((item) => ({
             title: item.title || "Budget Suggestion",
-            description: item.description || ""
+            description: item.description || "",
           }))
         : [],
       spendingAnalysis: {
-        highestCategory: parsed.spendingAnalysis?.highestCategory || highestCategory || "None",
-        observation: parsed.spendingAnalysis?.observation || "Category analysis complete."
+        highestCategory:
+          parsed.spendingAnalysis?.highestCategory || highestCategory || "None",
+        observation:
+          parsed.spendingAnalysis?.observation || "Category analysis complete.",
       },
       savingsAnalysis: {
-        savingsRate: typeof parsed.savingsAnalysis?.savingsRate === "number" 
-          ? parsed.savingsAnalysis.savingsRate 
-          : (typeof parsed.savingsAnalysis?.savingsRate === "string" ? parseFloat(parsed.savingsAnalysis.savingsRate) || 0 : Number(savingsRate.toFixed(1))),
-        observation: parsed.savingsAnalysis?.observation || "Savings analysis complete."
-      }
+        savingsRate:
+          typeof parsed.savingsAnalysis?.savingsRate === "number"
+            ? parsed.savingsAnalysis.savingsRate
+            : typeof parsed.savingsAnalysis?.savingsRate === "string"
+            ? parseFloat(parsed.savingsAnalysis.savingsRate) || 0
+            : Number(savingsRate.toFixed(1)),
+        observation:
+          parsed.savingsAnalysis?.observation || "Savings analysis complete.",
+      },
     };
+
+    // 7. Persist the successful result — upsert one document per user
+    await AIInsights.findOneAndUpdate(
+      { userId: req.user._id },
+      { data: validated, generatedAt: new Date() },
+      { upsert: true, new: true }
+    );
 
     res.json({
       success: true,
       data: validated,
+      generatedAt: new Date(),
     });
   } catch (error) {
-    console.error("Groq AI Insights Controller Error:", error);
+    console.error("generateInsights error:", error.message);
     res.status(500).json({
       success: false,
-      message: "Server error while generating AI insights",
+      message: "Server error while generating AI insights.",
     });
+  } finally {
+    // Always release the in-flight lock
+    inFlightRequests.delete(userId);
   }
 };
 
 module.exports = {
-  getAIInsights,
+  getSavedInsights,
+  generateInsights,
 };

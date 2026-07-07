@@ -97,6 +97,7 @@ const About = () => {
     { name: "React Icons", color: "bg-purple-500" },
     { name: "Google OAuth", color: "bg-red-500" },
     { name: "JWT", color: "bg-violet-600" },
+    { name: "Groq API", color: "bg-orange-600" },
     { name: "Vite", color: "bg-purple-600" }
   ];
 
