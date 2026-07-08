@@ -219,6 +219,3 @@ See [SETUP_GUIDE.md](./SETUP_GUIDE.md) for full deployment environment variable 
 
 ---
 
-## License
-
-This project is licensed under the MIT License.
