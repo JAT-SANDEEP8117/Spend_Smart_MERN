@@ -1,4 +1,4 @@
-# Spend Smart
+# SPEND SMART
 
 A modern, full-stack MERN personal finance management application with secure authentication, AI-powered financial insights, interactive analytics, and PDF report export.
 
